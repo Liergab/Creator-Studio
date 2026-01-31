@@ -24,7 +24,7 @@ Each user can connect **their own** Instagram account via OAuth. No shared token
 
 5. **App Review**: For real users (not just test users), submit your app for **Meta App Review** and request `instagram_content_publish`, `instagram_basic`, `pages_show_list`, `pages_read_engagement`. Until then, only test users can connect.
 
-**Dev fallback**: You can still set `INSTAGRAM_ACCESS_TOKEN` in `.env` for a single-account dev setup. If a user has connected via OAuth, their token is used instead.
+Instagram is **OAuth only** in this app; there is no hardcoded `.env` token.
 
 ---
 
@@ -83,33 +83,7 @@ This app currently supports a **single token** in `.env` (see below). For multi-
 
 ---
 
-## 5. Environment variable (single-account)
-
-Store the token **only** in `.env` (never commit it):
-
-```env
-# Long-lived Instagram (or Page) access token with instagram_content_publish
-INSTAGRAM_ACCESS_TOKEN="your-long-lived-access-token"
-```
-
-Restart the dev server after changing `.env`.
-
----
-
-## 6. How this app uses the token
-
-- **Server-side only**  
-  The token is read from `process.env.INSTAGRAM_ACCESS_TOKEN` in API routes and in `lib/instagram.ts`. It is never sent to the browser.
-
-- **Endpoints:**
-  - **GET /api/instagram/profile**  
-    Returns the Instagram account (id, username, etc.) for the configured token.
-  - **POST /api/instagram/publish**  
-    Publishes a single image to Instagram (Content Publishing API).
-
----
-
-## 7. Publishing a post (create post in this app → upload to Instagram)
+## 5. Publishing a post (create post in this app → upload to Instagram)
 
 ### API: POST /api/instagram/publish
 
@@ -149,7 +123,7 @@ const data = await res.json();
 
 ---
 
-## 8. Public image URL: Cloudinary (recommended)
+## 6. Public image URL: Cloudinary (recommended)
 
 Instagram requires a **publicly accessible** image URL. The app can upload images to **Cloudinary** so Meta can fetch them from anywhere (no ngrok or deploy needed).
 
@@ -164,13 +138,14 @@ If Cloudinary is not configured, uploads go to local `public/uploads` and you mu
 
 ---
 
-## 9. Flow summary
+## 7. Flow summary
 
 1. Create a **Meta App** and enable **Instagram Graph API** + **Content Publishing**.
-2. Get a **long-lived** access token via **your** OAuth flow (or Meta’s tools for testing).
-3. Put the token in **`.env`** as **`INSTAGRAM_ACCESS_TOKEN`**.
-4. (Optional) Add **Cloudinary** credentials to `.env` so uploads are public; or set **`NEXT_PUBLIC_APP_URL`** for local dev.
-5. Use **GET /api/instagram/profile** to confirm the account.
-6. Use **POST /api/instagram/publish** (or the Create page) with a public **imageUrl** to post to your **actual Instagram** feed.
+2. Set **`FACEBOOK_APP_ID`** and **`FACEBOOK_APP_SECRET`** in `.env` (same app as Facebook Login).
+3. Add **Valid OAuth Redirect URIs** in Meta (e.g. `https://your-app.com/api/auth/instagram/callback`).
+4. (Optional) Add **Cloudinary** credentials to `.env` so uploads are public.
+5. Users **Connect Instagram** (Accounts → Connect) via OAuth; token is stored **per user** in the database (`SocialAccount.accessToken`).
+6. (Optional) Set **`ENCRYPTION_KEY`** in `.env` (32+ character string) to encrypt stored tokens at rest; if unset, tokens are stored plain. You can use `JWT_SECRET` as fallback key.
+7. Use **POST /api/instagram/publish** (or the Create page) with a public **imageUrl** to post to Instagram.
 
 For full details and latest limits, see [Meta’s Content Publishing guide](https://developers.facebook.com/docs/instagram-api/guides/content-publishing) and [Error Codes](https://developers.facebook.com/docs/instagram-api/reference/error-codes).

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { mockSocialAccounts } from "@/lib/mockData";
-import { Link, Check, Plus, Loader2, Copy } from "lucide-react";
+import { Link, Check, Plus, Loader2 } from "lucide-react";
 
 const PLATFORMS = [
   {
@@ -44,7 +44,6 @@ export function AccountsPageContent() {
   const [instagramLoading, setInstagramLoading] = useState(true);
   const [instagramConnectDialogOpen, setInstagramConnectDialogOpen] =
     useState(false);
-  const [envCopied, setEnvCopied] = useState(false);
 
   const [instagramDisconnected, setInstagramDisconnected] = useState(false);
   const [tiktokDisconnected, setTiktokDisconnected] = useState(false);
@@ -79,14 +78,6 @@ export function AccountsPageContent() {
   const handleTiktokDisconnect = () => {
     localStorage.setItem(TIKTOK_DISCONNECT_KEY, "1");
     setTiktokDisconnected(true);
-  };
-
-  const envLine = 'INSTAGRAM_ACCESS_TOKEN="your-long-lived-token"';
-  const copyEnvLine = () => {
-    navigator.clipboard.writeText(envLine).then(() => {
-      setEnvCopied(true);
-      setTimeout(() => setEnvCopied(false), 2000);
-    });
   };
 
   useEffect(() => {
@@ -300,7 +291,7 @@ export function AccountsPageContent() {
           <DialogHeader>
             <DialogTitle>Connect Instagram</DialogTitle>
             <DialogDescription>
-              For production: set{" "}
+              Instagram is connected via OAuth only. Set{" "}
               <code className="bg-secondary px-1 rounded text-xs">
                 FACEBOOK_APP_ID
               </code>{" "}
@@ -308,29 +299,10 @@ export function AccountsPageContent() {
               <code className="bg-secondary px-1 rounded text-xs">
                 FACEBOOK_APP_SECRET
               </code>{" "}
-              in .env so each user can connect via OAuth (Connect → Meta login).
-              For dev you can use a single token below.
+              in .env (and in Meta for Developers → Valid OAuth Redirect URIs)
+              so users can connect their Instagram (Connect → Meta login).
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Optional (dev only): add to .env:
-          </p>
-          <div className="flex items-center gap-2 rounded-lg bg-secondary/80 p-3 font-mono text-xs">
-            <code className="flex-1 break-all">{envLine}</code>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={copyEnvLine}
-            >
-              {envCopied ? (
-                <span className="text-green-500 text-xs">Copied</span>
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
           <p className="text-xs text-muted-foreground">
             Full setup:{" "}
             <code className="bg-secondary px-1 rounded text-xs">
