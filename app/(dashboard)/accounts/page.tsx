@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,7 @@ const TIKTOK_DISCONNECT_KEY = "creator-studio-tiktok-disconnected";
 
 type InstagramProfile = { id: string; username?: string };
 
-export default function AccountsPage() {
+function AccountsPageContent() {
   const searchParams = useSearchParams();
   const connected = mockSocialAccounts.filter(a => a.connected);
   const connectedIds = new Set(connected.map(a => a.platform));
@@ -354,5 +354,19 @@ export default function AccountsPage() {
         YouTube Shorts coming in Phase 2.
       </p>
     </>
+  );
+}
+
+export default function AccountsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[200px]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <AccountsPageContent />
+    </Suspense>
   );
 }
