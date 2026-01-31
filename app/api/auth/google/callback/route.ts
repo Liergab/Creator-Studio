@@ -7,24 +7,39 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
 
+function getRedirectBase(request: NextRequest): string {
+  const host =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    request.headers.get("x-forwarded-ssl");
+  if (host) {
+    const protocol = proto === "https" || proto === "on" ? "https" : "http";
+    return `${protocol}://${host}`;
+  }
+  return APP_URL;
+}
+
 export async function GET(request: NextRequest) {
+  const base = getRedirectBase(request);
   const code = request.nextUrl.searchParams.get("code");
   const error = request.nextUrl.searchParams.get("error");
 
   if (error) {
-    return NextResponse.redirect(`${APP_URL}/login?error=oauth_cancelled`);
+    return NextResponse.redirect(`${base}/login?error=oauth_cancelled`);
   }
 
   if (!code) {
-    return NextResponse.redirect(`${APP_URL}/login?error=oauth_failed`);
+    return NextResponse.redirect(`${base}/login?error=oauth_failed`);
   }
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    return NextResponse.redirect(`${APP_URL}/login?error=oauth_not_configured`);
+    return NextResponse.redirect(`${base}/login?error=oauth_not_configured`);
   }
 
   try {
-    // Exchange code for access token
+    // Exchange code for access token (redirect_uri must match Google Console)
+    const redirectUri = `${base}/api/auth/google/callback`;
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -32,7 +47,7 @@ export async function GET(request: NextRequest) {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${APP_URL}/api/auth/google/callback`,
+        redirect_uri: redirectUri,
         grant_type: "authorization_code",
       }),
     });
@@ -94,13 +109,13 @@ export async function GET(request: NextRequest) {
       avatar: user.avatar || undefined,
     });
 
-    // Redirect based on role
+    // Redirect based on role (use same origin as request so Vercel stays on deployment URL)
     if (user.role === "super_admin") {
-      return NextResponse.redirect(`${APP_URL}/admin`);
+      return NextResponse.redirect(`${base}/admin`);
     }
-    return NextResponse.redirect(`${APP_URL}/`);
+    return NextResponse.redirect(`${base}/`);
   } catch (error) {
     console.error("Google OAuth error:", error);
-    return NextResponse.redirect(`${APP_URL}/login?error=oauth_error`);
+    return NextResponse.redirect(`${base}/login?error=oauth_error`);
   }
 }

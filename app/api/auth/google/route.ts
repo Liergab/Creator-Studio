@@ -1,10 +1,20 @@
-import { NextResponse } from "next/server";
-import { redirect } from "next/navigation";
+import { NextRequest, NextResponse } from "next/server";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
 
-export async function GET() {
+function getBaseUrl(request: NextRequest): string {
+  const host =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto");
+  if (host) {
+    const protocol = proto === "https" ? "https" : "http";
+    return `${protocol}://${host}`;
+  }
+  return APP_URL;
+}
+
+export async function GET(request: NextRequest) {
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json(
       { error: "Google OAuth not configured. Set GOOGLE_CLIENT_ID in .env" },
@@ -12,7 +22,8 @@ export async function GET() {
     );
   }
 
-  const redirectUri = `${APP_URL}/api/auth/google/callback`;
+  const base = getBaseUrl(request);
+  const redirectUri = `${base}/api/auth/google/callback`;
   const scope = "profile email";
   const state = Math.random().toString(36).substring(7); // Simple state for CSRF protection
 
