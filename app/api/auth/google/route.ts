@@ -8,7 +8,14 @@ function getBaseUrl(request: NextRequest): string {
     request.headers.get("x-forwarded-host") || request.headers.get("host");
   const proto = request.headers.get("x-forwarded-proto");
   if (host) {
-    const protocol = proto === "https" ? "https" : "http";
+    // Use https for production (Vercel, etc.); http only for localhost
+    const isLocal =
+      host.startsWith("localhost") || host.startsWith("127.0.0.1");
+    const protocol = isLocal
+      ? proto === "https"
+        ? "https"
+        : "http"
+      : "https";
     return `${protocol}://${host}`;
   }
   return APP_URL;
