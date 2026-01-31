@@ -5,6 +5,9 @@ const COOKIE_NAME = "creator-studio-session";
 
 const PUBLIC_PATHS = new Set([
   "/login",
+  "/privacy",
+  "/terms",
+  "/data-deletion",
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/session",
