@@ -5,7 +5,7 @@ import type { Role } from "@prisma/client";
 
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -25,12 +25,14 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange code for access token
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${new URLSearchParams({
-      client_id: FACEBOOK_APP_ID,
-      client_secret: FACEBOOK_APP_SECRET,
-      redirect_uri: `${APP_URL}/api/auth/facebook/callback`,
-      code,
-    }).toString()}`;
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${new URLSearchParams(
+      {
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
+        redirect_uri: `${APP_URL}/api/auth/facebook/callback`,
+        code,
+      }
+    ).toString()}`;
 
     const tokenResponse = await fetch(tokenUrl, { method: "GET" });
     const tokens = await tokenResponse.json();
@@ -40,10 +42,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user profile
-    const profileUrl = `https://graph.facebook.com/v18.0/me?${new URLSearchParams({
-      fields: "id,name,email,picture",
-      access_token: tokens.access_token,
-    }).toString()}`;
+    const profileUrl = `https://graph.facebook.com/v18.0/me?${new URLSearchParams(
+      {
+        fields: "id,name,email,picture",
+        access_token: tokens.access_token,
+      }
+    ).toString()}`;
 
     const profileResponse = await fetch(profileUrl);
     const profile = await profileResponse.json();
