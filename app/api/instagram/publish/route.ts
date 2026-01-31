@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
-import { publishImageToInstagram, hasInstagramToken } from "@/lib/instagram";
+import { decryptToken } from "@/lib/encrypt";
+import { publishImageToInstagram } from "@/lib/instagram";
 
 /**
  * POST /api/instagram/publish
- * Creates and publishes a single image post to Instagram (Content Publishing API).
- * Body: { imageUrl: string, caption?: string }
- * Uses per-user OAuth token from DB when available; otherwise falls back to INSTAGRAM_ACCESS_TOKEN (.env).
+ * Creates and publishes a single image post to Instagram (OAuth only). No hardcoded token.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -49,35 +48,32 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getSessionCookie();
-    let result: Awaited<ReturnType<typeof publishImageToInstagram>>;
-
-    if (user?.id) {
-      const account = await prisma.socialAccount.findUnique({
-        where: {
-          userId_platform: { userId: user.id, platform: "instagram" },
-        },
-      });
-      if (account?.accessToken && account.externalId) {
-        result = await publishImageToInstagram(imageUrl, caption, {
-          accessToken: account.accessToken,
-          igUserId: account.externalId,
-        });
-      } else {
-        result = hasInstagramToken()
-          ? await publishImageToInstagram(imageUrl, caption)
-          : {
-              ok: false,
-              error: "Connect Instagram first (Accounts → Connect Instagram)",
-            };
-      }
-    } else {
-      result = hasInstagramToken()
-        ? await publishImageToInstagram(imageUrl, caption)
-        : {
-            ok: false,
-            error: "Connect Instagram first (Accounts → Connect Instagram)",
-          };
+    if (!user?.id) {
+      return NextResponse.json(
+        { error: "Sign in to publish to Instagram" },
+        { status: 401 }
+      );
     }
+
+    const account = await prisma.socialAccount.findUnique({
+      where: {
+        userId_platform: { userId: user.id, platform: "instagram" },
+      },
+    });
+    if (!account?.accessToken || !account.externalId) {
+      return NextResponse.json(
+        {
+          error: "Connect Instagram first (Accounts → Connect Instagram)",
+        },
+        { status: 503 }
+      );
+    }
+
+    const accessToken = decryptToken(account.accessToken);
+    const result = await publishImageToInstagram(imageUrl, caption, {
+      accessToken,
+      igUserId: account.externalId,
+    });
 
     if (!result.ok) {
       return NextResponse.json(

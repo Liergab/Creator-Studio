@@ -23,23 +23,12 @@ FACEBOOK_APP_SECRET="your-facebook-app-secret"
 # JWT Secret (generate with: openssl rand -base64 32)
 JWT_SECRET="your-jwt-secret-key-change-in-production"
 
-# Instagram / Meta Graph API (optional – for server-side API calls)
-# Use a long-lived access token from Meta for Developers. Never commit this.
-INSTAGRAM_ACCESS_TOKEN="your-instagram-access-token"
+# Instagram uses the same Meta app (FACEBOOK_APP_ID / FACEBOOK_APP_SECRET) via OAuth; no separate token.
 ```
 
-### Using your Instagram API token
+### Instagram (OAuth only)
 
-1. **Put the token only in `.env`** (never in code or in git):
-   ```env
-   INSTAGRAM_ACCESS_TOKEN="paste-your-token-here"
-   ```
-2. **Restart the dev server** after changing `.env`.
-3. The app uses it **only on the server**:
-   - `lib/instagram.ts` reads `process.env.INSTAGRAM_ACCESS_TOKEN` and calls the [Instagram Graph API](https://developers.facebook.com/docs/instagram-api).
-   - `GET /api/instagram/profile` returns the connected account (id, username, etc.) using that token.
-
-You can call `GET /api/instagram/profile` to verify the token works. For posting or more features, you’ll need the right Meta app permissions and possibly the Content Publishing API.
+Instagram is connected via **OAuth** only (Accounts → Connect Instagram). Use the same **FACEBOOK_APP_ID** and **FACEBOOK_APP_SECRET**. Add the Instagram callback to **Valid OAuth Redirect URIs** in Meta: `https://your-domain.com/api/auth/instagram/callback`. See **docs/INSTAGRAM_SETUP.md** for full setup.
 
 ---
 

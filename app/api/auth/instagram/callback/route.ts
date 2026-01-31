@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
+import { encryptToken } from "@/lib/encrypt";
 
 const META_APP_ID = process.env.FACEBOOK_APP_ID;
 const META_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
@@ -145,7 +146,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 6. Upsert SocialAccount (Instagram) for this user
+    // 6. Upsert SocialAccount (Instagram) – store token per user (encrypted if ENCRYPTION_KEY set)
+    const storedToken = encryptToken(longLivedPageToken);
     await prisma.socialAccount.upsert({
       where: {
         userId_platform: { userId: user.id, platform: "instagram" },
@@ -155,14 +157,14 @@ export async function GET(request: NextRequest) {
         platform: "instagram",
         username,
         connected: true,
-        accessToken: longLivedPageToken,
+        accessToken: storedToken,
         tokenExpiresAt,
         externalId: igBusinessId,
       },
       update: {
         username,
         connected: true,
-        accessToken: longLivedPageToken,
+        accessToken: storedToken,
         tokenExpiresAt,
         externalId: igBusinessId,
       },

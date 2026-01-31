@@ -1,51 +1,43 @@
 import { NextResponse } from "next/server";
 import { getSessionCookie } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
-import { getInstagramProfile, hasInstagramToken } from "@/lib/instagram";
+import { decryptToken } from "@/lib/encrypt";
+import { getInstagramProfile } from "@/lib/instagram";
 
 /**
  * GET /api/instagram/profile
- * Returns the Instagram account for the current user.
- * Uses per-user OAuth token from DB when available; otherwise falls back to INSTAGRAM_ACCESS_TOKEN (.env) for dev.
+ * Returns the Instagram account for the current user (OAuth only). No hardcoded token.
  */
 export async function GET() {
   const user = await getSessionCookie();
-
-  if (user?.id) {
-    const account = await prisma.socialAccount.findUnique({
-      where: {
-        userId_platform: { userId: user.id, platform: "instagram" },
-      },
-    });
-    if (account?.accessToken) {
-      const result = await getInstagramProfile(account.accessToken);
-      if (result.ok) {
-        return NextResponse.json({ profile: result.profile });
-      }
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error.includes("token") ? 401 : 400 }
-      );
-    }
-  }
-
-  // Fallback: single token from .env (dev / testing)
-  if (hasInstagramToken()) {
-    const result = await getInstagramProfile();
-    if (result.ok) {
-      return NextResponse.json({ profile: result.profile });
-    }
+  if (!user?.id) {
     return NextResponse.json(
-      { error: result.error },
-      { status: result.error.includes("token") ? 401 : 400 }
+      { error: "Sign in to view connected Instagram" },
+      { status: 401 }
     );
   }
 
-  return NextResponse.json(
-    {
-      error:
-        "Connect Instagram (OAuth) or set INSTAGRAM_ACCESS_TOKEN in .env for dev",
+  const account = await prisma.socialAccount.findUnique({
+    where: {
+      userId_platform: { userId: user.id, platform: "instagram" },
     },
-    { status: 503 }
+  });
+  if (!account?.accessToken) {
+    return NextResponse.json(
+      {
+        error: "Connect Instagram (Accounts → Connect Instagram)",
+      },
+      { status: 503 }
+    );
+  }
+
+  const accessToken = decryptToken(account.accessToken);
+  const result = await getInstagramProfile(accessToken);
+  if (result.ok) {
+    return NextResponse.json({ profile: result.profile });
+  }
+  return NextResponse.json(
+    { error: result.error },
+    { status: result.error.includes("token") ? 401 : 400 }
   );
 }

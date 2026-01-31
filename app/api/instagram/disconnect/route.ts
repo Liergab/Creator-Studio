@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/instagram/disconnect
- * Clears the current user's Instagram OAuth token (per-user). Does not remove INSTAGRAM_ACCESS_TOKEN from .env.
+ * Clears the current user's Instagram OAuth token (per-user).
  */
 export async function POST() {
   const user = await getSessionCookie();
